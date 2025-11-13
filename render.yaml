@@ -37,6 +37,6 @@ databases:
   - name: product_importer_db
     plan: free
 
-redis:
-  - name: product_importer_redis
+  - type: redis
+    name: product_importer_redis
     plan: free
