@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -15,6 +15,10 @@ services:
           type: redis
           name: product_importer_redis
           property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
 
   - type: worker
     name: celery-worker
@@ -32,6 +36,13 @@ services:
           type: redis
           name: product_importer_redis
           property: connectionString
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: product-importer
+          property: SECRET_KEY
+      - key: ENVIRONMENT
+        value: production
 
 databases:
   - name: product_importer_db
