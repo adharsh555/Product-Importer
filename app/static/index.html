@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Importer - Acme Inc.</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-upload"></i> Product Importer</h1>
+            <p>Import and manage products from CSV files</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="upload">Upload CSV</button>
+            <button class="tab" data-tab="manage">Manage Products</button>
+            <button class="tab" data-tab="webhooks">Webhooks</button>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="uploadTab" class="tab-content active">
+            <h2>Upload Product CSV</h2>
+            <p>Upload a CSV file with up to 500,000 product records. SKU will be used as unique identifier (case-insensitive).</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <h3>Click to upload or drag and drop</h3>
+                <p>CSV files only (max 500,000 records)</p>
+                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+            </div>
+
+            <div id="uploadProgress" class="hidden">
+                <h4>Upload Progress</h4>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">Processing...</p>
+            </div>
+
+            <div style="margin-top: 30px; padding: 20px; background: #fff3cd; border-radius: 8px;">
+                <h4><i class="fas fa-info-circle"></i> CSV Format</h4>
+                <p>Your CSV should have the following columns:</p>
+                <ul>
+                    <li><strong>sku</strong> (required, unique)</li>
+                    <li><strong>name</strong> (required)</li>
+                    <li><strong>description</strong> (optional)</li>
+                </ul>
+                <p>Duplicate SKUs will be automatically overwritten.</p>
+            </div>
+        </div>
+
+        <!-- Manage Products Tab -->
+        <div id="manageTab" class="tab-content">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
+                <h2>Manage Products</h2>
+                <button class="btn btn-danger" id="bulkDeleteBtn">
+                    <i class="fas fa-trash"></i> Delete All Products
+                </button>
+            </div>
+
+            <!-- Product Form -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 id="formTitle">Create Product</h3>
+                <form id="productForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label for="sku">SKU *</label>
+                            <input type="text" id="sku" name="sku" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Name *</label>
+                            <input type="text" id="name" name="name" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="active" name="active" checked>
+                            Active
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save Product
+                    </button>
+                </form>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="form-group">
+                    <label for="filterSku">SKU</label>
+                    <input type="text" id="filterSku" class="form-control filter-input" placeholder="Filter by SKU">
+                </div>
+                <div class="form-group">
+                    <label for="filterName">Name</label>
+                    <input type="text" id="filterName" class="form-control filter-input" placeholder="Filter by name">
+                </div>
+                <div class="form-group">
+                    <label for="filterActive">Active Status</label>
+                    <select id="filterActive" class="form-control filter-input">
+                        <option value="">All</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterDescription">Description</label>
+                    <input type="text" id="filterDescription" class="form-control filter-input" placeholder="Filter by description">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn" id="applyFilters">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+                <button class="btn" id="clearFilters">
+                    <i class="fas fa-times"></i> Clear Filters
+                </button>
+            </div>
+
+            <!-- Products Table -->
+            <div style="overflow-x: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTable">
+                        <!-- Products will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination">
+                <!-- Pagination buttons will be generated here -->
+            </div>
+        </div>
+
+        <!-- Webhooks Tab -->
+        <div id="webhooksTab" class="tab-content">
+            <h2>Webhook Configuration</h2>
+            <p>Configure webhooks to receive notifications for various events.</p>
+
+            <!-- Webhook Form -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3>Add Webhook</h3>
+                <form id="webhookForm">
+                    <div class="form-group">
+                        <label for="url">Webhook URL *</label>
+                        <input type="url" id="url" name="url" class="form-control" required placeholder="https://example.com/webhook">
+                    </div>
+                    <div class="form-group">
+                        <label for="event_type">Event Type *</label>
+                        <select id="event_type" name="event_type" class="form-control" required>
+                            <option value="import.completed">Import Completed</option>
+                            <option value="import.failed">Import Failed</option>
+                            <option value="bulk_delete.completed">Bulk Delete Completed</option>
+                            <option value="product.created">Product Created</option>
+                            <option value="product.updated">Product Updated</option>
+                            <option value="product.deleted">Product Deleted</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="enabled" name="enabled" checked>
+                            Enabled
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add Webhook
+                    </button>
+                </form>
+            </div>
+
+            <!-- Webhooks Table -->
+            <h3>Configured Webhooks</h3>
+            <div style="overflow-x: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>URL</th>
+                            <th>Event Type</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="webhooksTable">
+                        <!-- Webhooks will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
